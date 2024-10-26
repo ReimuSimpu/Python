@@ -5,6 +5,7 @@ import string
 import math
 from pystyle import Colors, Center
 from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 
 if os.name == 'nt':
     os.system('title Shitty Teleport Tool - Made By .lordhippo')
@@ -75,24 +76,29 @@ def CheckCoords(Same=True, XRange=0, YRange=0, ZRange=0):
         for future in futures:
             future.result()
 
+CoordMapLock = Lock()
 def CheckCoordFile(FilePath, CoordMap, Same, XRange, YRange, ZRange):
-    with open(FilePath, 'r') as Jsonf:
+    with open(FilePath, 'r', encoding='utf-8') as Jsonf:
         Data = json.load(Jsonf)
     Coords = tuple(Data.get('position', []))
-    
-    if Same:
-        if Coords in CoordMap:
-            print(f"Match found: {os.path.basename(FilePath)} and {CoordMap[Coords]} have the same coordinates: {Coords}")
-            os.remove(FilePath)
+
+    with CoordMapLock:
+        if Same:
+            if Coords in CoordMap:
+                print(f"Match found: {os.path.basename(FilePath)} and {CoordMap[Coords]} have the same coordinates: {Coords}")
+                os.remove(FilePath)
+            else:
+                CoordMap[Coords] = os.path.basename(FilePath)
         else:
-            CoordMap[Coords] = os.path.basename(FilePath)
-    else:
-        if any(all(abs(Coords[i] - otherCoords[i]) <= [XRange, YRange, ZRange][i] for i in range(3)) for otherCoords in CoordMap.keys()):
-            print(f"Match found: {os.path.basename(FilePath)} has similar coordinates.")
-            os.remove(FilePath)
-        else:
-            CoordMap[Coords] = os.path.basename(FilePath)
-            
+            for i, v in CoordMap.items():
+                if all(abs(Coords[i] - i[i]) <= [XRange, YRange, ZRange][i] for i in range(3)):
+                    print(f"Close match found: {os.path.basename(FilePath)} is close to {v}")
+                    os.remove(FilePath)
+                    break
+            else:
+                CoordMap[Coords] = os.path.basename(FilePath)
+
+
 def TakeFolderContent():
     for Root, _, Files in os.walk(os.path.join(BaseFolder, 'Folders')):
         for File in Files:
@@ -103,7 +109,8 @@ def TakeFolderContent():
                 with open(os.path.join(OutputFolder, RandomName), 'w', encoding='utf-8') as Outfile:
                     json.dump(Content, Outfile, indent=4)
                 print(f"Moved {File} and renamed to {RandomName}")
-                
+
+
 def SplitFiles(FilesPerFolder):
     Files = [F for F in os.listdir(OutputFolder) if F.endswith('.json')]
     for I in range(0, len(Files), FilesPerFolder):
