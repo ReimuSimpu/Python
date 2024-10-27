@@ -79,8 +79,14 @@ def TakeFolderContent():
             print(f"Going through {os.path.basename(root)}, {NumJsons} JSON(s)")
         
             for JsonFile in JsonFiles:
-                with open(os.path.join(root, JsonFile), 'r', encoding='utf-8') as f:
-                    Content = json.load(f)
+                FilePath = os.path.join(root, JsonFile)
+                try:
+                    with open(FilePath, 'r', encoding='utf-8') as f:
+                        Content = json.load(f)
+                except UnicodeDecodeError:
+                    with open(FilePath, 'r', encoding='ISO-8859-1') as f:
+                        Content = json.load(f)
+
                 RandomName = f"{''.join(random.choices(string.ascii_letters + string.digits, k=13))}.json"
                 with open(os.path.join(OutputFolder, RandomName), 'w', encoding='utf-8') as Outfile:
                     json.dump(Content, Outfile, indent=4)
