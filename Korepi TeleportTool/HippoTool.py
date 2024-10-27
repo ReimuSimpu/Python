@@ -25,12 +25,12 @@ def Title():
     """))
 
 def Option(Text): print(Center.XCenter(Text))
-def EditFile(FilePath, Description, Name, RoundPos, NewName):
+def EditFile(FilePath, Description, Name, RoundPos, i):
     with open(FilePath, 'r+') as Jsonf:
         Data = json.load(Jsonf)
         Data.update({
             'description': Description or "Teleport",
-            'name': NewName,
+            'name': i,
             'position': [round(coord, 2) for coord in Data.get('position', [])] if RoundPos else Data.get('position', [])
         })
         Jsonf.seek(0); json.dump(Data, Jsonf, indent=4); Jsonf.truncate()
@@ -46,12 +46,10 @@ def EditFiles(Description, Name, RoundPos, SortFile):
         
         Files.sort(key=distance_from_origin)
 
-    for index, file in enumerate(Files, start=1):
-        NewName = f"{index}_{file}"
-        NewFilePath = os.path.join(OutputFolder, NewName)
-        os.rename(os.path.join(OutputFolder, file), NewFilePath)
-        EditFile(NewFilePath, Description, Name, RoundPos, NewName.replace('.json', ''))
-
+    for index in range(1, len(Files) + 1):
+        NewFilePath = os.path.join(OutputFolder, f"{index}_{''.join(random.choices(string.ascii_letters + string.digits, k=10))}.json")
+        os.rename(os.path.join(OutputFolder, Files[index - 1]), NewFilePath)
+        EditFile(NewFilePath, Description, Name, RoundPos, str(index))
 
 CoordMapLock = Lock()
 def CheckCoordFile(FilePath, CoordMap, Same, Ranges):
