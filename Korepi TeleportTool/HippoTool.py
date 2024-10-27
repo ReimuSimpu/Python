@@ -37,10 +37,23 @@ def EditFile(FilePath, Description, Name, RoundPos):
 
 def EditFiles(Description, Name, RoundPos, SortFile):
     Files = [F for F in os.listdir(OutputFolder) if F.endswith('.json')]
-    if SortFile: Files.sort(key=lambda f: math.sqrt(sum(coord**2 for coord in json.load(open(os.path.join(OutputFolder, f)))['position'])))
+    if SortFile:
+        def distance_from_origin(file):
+            with open(os.path.join(OutputFolder, file), 'r') as Jsonf:
+                Data = json.load(Jsonf)
+                position = Data.get('position', [0, 0, 0])
+                return math.sqrt(sum(coord ** 2 for coord in position))
+        
+        Files.sort(key=distance_from_origin)
+
+        for index, file in enumerate(Files, start=1):
+            new_name = f"{index}_{''.join(random.choices(string.ascii_letters + string.digits, k=10))}.json"
+            os.rename(os.path.join(OutputFolder, file), os.path.join(OutputFolder, new_name))
+
     with ThreadPoolExecutor() as executor:
-        futures = [  executor.submit(EditFile, os.path.join(OutputFolder, File), Description, Name, RoundPos) for File in Files ]
-        for future in futures: future.result()
+        futures = [executor.submit(EditFile, os.path.join(OutputFolder, File), Description, Name, RoundPos) for File in os.listdir(OutputFolder)]
+        for future in futures:
+            future.result()
 
 CoordMapLock = Lock()
 def CheckCoordFile(FilePath, CoordMap, Same, Ranges):
