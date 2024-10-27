@@ -25,17 +25,20 @@ def Title():
     """))
 
 def Option(Text): print(Center.XCenter(Text))
-def EditFile(FilePath, Description, Name, RoundPos, i):
+
+def EditFile(FilePath, Description, Name, RoundPos):
     with open(FilePath, 'r+') as Jsonf:
         Data = json.load(Jsonf)
         Data.update({
             'description': Description or "Teleport",
-            'name': i,
+            'name': str(Name),
             'position': [round(coord, 2) for coord in Data.get('position', [])] if RoundPos else Data.get('position', [])
         })
-        Jsonf.seek(0); json.dump(Data, Jsonf, indent=4); Jsonf.truncate()
+        Jsonf.seek(0)
+        json.dump(Data, Jsonf, indent=4)
+        Jsonf.truncate()
 
-def EditFiles(Description, Name, RoundPos, SortFile):
+def EditFiles(Description, Name, RoundPos, SortFile, OutputFolder):
     Files = [F for F in os.listdir(OutputFolder) if F.endswith('.json')]
     if SortFile:
         def distance_from_origin(file):
@@ -46,10 +49,10 @@ def EditFiles(Description, Name, RoundPos, SortFile):
         
         Files.sort(key=distance_from_origin)
 
-    for index in range(1, len(Files) + 1):
-        NewFilePath = os.path.join(OutputFolder, f"{index}_{''.join(random.choices(string.ascii_letters + string.digits, k=10))}.json")
-        os.rename(os.path.join(OutputFolder, Files[index - 1]), NewFilePath)
-        EditFile(NewFilePath, Description, Name, RoundPos, str(index))
+    for i in range(1, len(Files) + 1):
+        NewFilePath = os.path.join(OutputFolder, f"{i}_{''.join(random.choices(string.ascii_letters + string.digits, k=10))}.json")
+        os.rename(os.path.join(OutputFolder, Files[i - 1]), NewFilePath)
+        EditFile(NewFilePath, Description, i, RoundPos)
 
 CoordMapLock = Lock()
 def CheckCoordFile(FilePath, CoordMap, Same, Ranges):
@@ -112,8 +115,11 @@ def Main():
     while True:
         Title(); Option("(1): Edit Files"); Option("(2): Check Coordinates"); Option("(3): Take Folder Content"); Option("(4): Split Files")
 
-        try:  Choice = int(input(Colors.white + "    > " + Colors.reset))
-        except ValueError:  print(Colors.red + "Invalid input. Please enter a number." + Colors.reset); continue
+        try: 
+            Choice = int(input(Colors.white + "    > " + Colors.reset))
+        except ValueError:  
+            print(Colors.red + "Invalid input. Please enter a number." + Colors.reset); 
+            continue
 
         Title()
         if Choice == 1:
@@ -122,7 +128,7 @@ def Main():
             RoundPos = input(Colors.white + "    Round positions? (y/n): ").lower() == 'y'
             SortFile = input(Colors.white + "    Sort File by coord? (y/n): ").lower() == 'y'
 
-            EditFiles(Description, Name, RoundPos, SortFile)
+            EditFiles(Description, Name, RoundPos, SortFile, OutputFolder)
         elif Choice == 2:
             NearRangeCheck = input(Colors.white + "    Use near check (y/n)? ").lower() == 'y'
             if NearRangeCheck:
